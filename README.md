@@ -1,6 +1,6 @@
 # Windows Endpoint Detection Deployment — Wazuh + Sysmon + Sigma + YARA
 
-🇬🇧 **English** · [🇫🇷 Français](README.fr.md)
+**English** · [Français](README.fr.md)
 
 One-shot PowerShell deployment that turns a Windows endpoint into a
 **detection-ready host**: installs the **Wazuh** agent, **Sysmon**, schedules
@@ -12,7 +12,7 @@ One-shot PowerShell deployment that turns a Windows endpoint into a
 
 | Component | Role |
 |---|---|
-| Wazuh agent | EDR/SIEM telemetry → Wazuh manager |
+| Wazuh agent | EDR/SIEM telemetry -> Wazuh manager |
 | Sysmon | Rich process / network / registry event logging |
 | Sigma + Chainsaw | Scheduled EVTX hunting against the Sigma ruleset |
 | YARA | On-demand malware scanning (active response) |
