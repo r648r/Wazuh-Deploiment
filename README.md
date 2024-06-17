@@ -1,25 +1,25 @@
-# Déploiement de détection sur endpoint Windows — Wazuh + Sysmon + Sigma + YARA
+# Windows Endpoint Detection Deployment — Wazuh + Sysmon + Sigma + YARA
 
-🇫🇷 **Français** · [🇬🇧 English](README.en.md)
+🇬🇧 **English** · [🇫🇷 Français](README.fr.md)
 
-Déploiement PowerShell en une passe qui transforme un endpoint Windows en
-**hôte prêt à détecter** : installe l'agent **Wazuh**, **Sysmon**, planifie des
-chasses **Chainsaw + Sigma** sur les EVTX, câble **YARA** et les Sysinternals
-(`autoruns`, `sigcheck`, `logonsessions`) en commandes d'active-response Wazuh,
-et embarque des scripts **Atomic Red Team** pour valider les détections.
+One-shot PowerShell deployment that turns a Windows endpoint into a
+**detection-ready host**: installs the **Wazuh** agent, **Sysmon**, schedules
+**Chainsaw + Sigma** EVTX hunts, wires **YARA** and Sysinternals (`autoruns`,
+`sigcheck`, `logonsessions`) as Wazuh active-response commands, and ships
+**Atomic Red Team** scripts to validate the detections.
 
-## Stack de détection déployée
+## Detection stack deployed
 
-| Composant | Rôle |
+| Component | Role |
 |---|---|
-| Agent Wazuh | Télémétrie EDR/SIEM → manager Wazuh |
-| Sysmon | Journalisation riche des process / réseau / registre |
-| Sigma + Chainsaw | Chasse EVTX planifiée contre le ruleset Sigma |
-| YARA | Scan malware à la demande (active response) |
-| Sysinternals | Collecteurs `autoruns`, `sigcheck`, `logonsessions` |
-| Atomic Red Team | Validation des détections (tests ART, simu ransomware) |
+| Wazuh agent | EDR/SIEM telemetry → Wazuh manager |
+| Sysmon | Rich process / network / registry event logging |
+| Sigma + Chainsaw | Scheduled EVTX hunting against the Sigma ruleset |
+| YARA | On-demand malware scanning (active response) |
+| Sysinternals | `autoruns`, `sigcheck`, `logonsessions` collectors |
+| Atomic Red Team | Detection validation (ART tests, ransomware sim) |
 
-## Démo
+## Demo
 
 ```console
 PS C:\> .\Deploy-WazuhAgent.ps1 -WAZUH_AGENT_GROUP Workstations `
@@ -35,7 +35,7 @@ PS C:\> .\Deploy-WazuhAgent.ps1 -WAZUH_AGENT_GROUP Workstations `
 [+] Finished — endpoint is detection-ready
 ```
 
-Exemple de scan YARA en active-response :
+Example YARA active-response scan:
 
 ```console
 PS C:\> .\yara.ps1
@@ -45,78 +45,78 @@ Mimikatz_Memory       C:\Users\Public\Downloads\mk.exe
 Generic_Ransomware    C:\Users\Public\Downloads\invoice.scr
 ```
 
-> Les valeurs ci-dessus sont **synthétiques** — aucun hôte, IP ou détection réels.
+> Values above are **synthetic** — no real host, IP or finding is shown.
 
 ---
 
-## Paramètres
+## Parameters
 
-Le script de déploiement prend trois paramètres obligatoires :
+The deployment script takes three required parameters:
 
-- `WAZUH_AGENT_GROUP` — le groupe Wazuh auquel l'agent est assigné.
-- `WAZUH_AGENT_NAME` — le nom de l'agent affiché sur le dashboard.
-- `WAZUH_REGISTRATION_SERVER` — l'adresse IP du manager Wazuh.
+- `WAZUH_AGENT_GROUP` — the Wazuh group the agent is assigned to.
+- `WAZUH_AGENT_NAME` — the agent name shown on the dashboard.
+- `WAZUH_REGISTRATION_SERVER` — IP address of the Wazuh manager.
 
-## Fonctions principales
+## Main functions
 
 ### CustomLog
-Gère l'affichage des logs en distinguant les erreurs des messages d'information.
-- `message` (string) — le message à afficher.
-- `isAnError` (bool) — si le message est une erreur (optionnel, défaut `false`).
+Handles log output, distinguishing error messages from informational ones.
+- `message` (string) — the message to print.
+- `isAnError` (bool) — whether the message is an error (optional, default `false`).
 ```powershell
 CustomLog -message "Installation succeeded."
 CustomLog -message "Installation failed." -isAnError $true
 ```
 
 ### InstallWazuh
-Installe l'agent Wazuh : vérifie si le service existe déjà, le télécharge et
-l'installe sinon, et le démarre s'il n'est pas en cours d'exécution.
+Installs the Wazuh agent: checks whether the service already exists, downloads and
+installs it if not, and starts it if it isn't running.
 
 ### InstallScripts
-Exécute les scripts qui installent les composants supplémentaires (ex. Sysmon),
-chacun avec les privilèges admin via `StartPowershellAsAdmin`, en capturant les erreurs.
+Runs the scripts that install extra components (e.g. Sysmon), executing each with
+admin privileges via `StartPowershellAsAdmin` and capturing any errors.
 
 ### UpdateLocalInternalOption
-Met à jour `local_internal_options.conf` pour activer les commandes distantes
+Updates `local_internal_options.conf` to enable remote commands
 (`wazuh_command.remote_commands=1`).
 
 ### InitializeAndDownloadChainsaw
-Réinitialise le répertoire cible, puis télécharge et extrait Chainsaw
-(combine `InitChainsawSetup` + `DownloadChainsaw`).
+Resets the target directory, then downloads and extracts Chainsaw
+(combines `InitChainsawSetup` + `DownloadChainsaw`).
 
 ### PullOrCloneSigma
-Clone le dépôt de règles Sigma, ou fait un pull s'il existe déjà.
+Clones the Sigma rules repository, or pulls the latest if it already exists.
 
 ### MoveFiles
-Copie les fichiers de configuration requis vers leurs destinations et vérifie chaque copie.
+Copies the required configuration files to their destinations and verifies each copy.
 
 ### StartWazuh
-Démarre le service `WazuhSvc`.
+Starts the `WazuhSvc` service.
 
 ### StartPowershellAsAdmin
-Exécute des commandes PowerShell avec les privilèges administrateur.
-- `Arguments` (string) — les arguments passés à la commande PowerShell.
+Runs PowerShell commands with administrative privileges.
+- `Arguments` (string) — arguments passed to the PowerShell command.
 
 ### UninstallWazuhSysinternal
-Supprime les outils Sysinternals (`C:\Program Files\sysinternals`) et désinstalle
-l'agent Wazuh.
+Removes the Sysinternals tools (`C:\Program Files\sysinternals`) and uninstalls
+the Wazuh agent.
 
-## Constantes
+## Constants
 
-- `$CHAINSAW_SOURCE_FOLDER` — répertoire source de Chainsaw.
-- `$ADMIN_DOCUMENT` — répertoire Documents de l'administrateur.
-- `$SOCFORTRESS_DESTINATION_FOLDER` — répertoire de destination SOCFortress.
-- `$SIGMA_RULES_GIT_URL` — URL du dépôt Git des règles Sigma.
-- `$TEMP_PATH` — répertoire temporaire.
-- `$IS_ADMIN` — si le script s'exécute avec les privilèges admin.
-- `$SCRIPT_TO_EXEC` — table de hachage des scripts à exécuter.
-- `$WAZUH_INSTALLER_PATH` — chemin de l'installateur de l'agent Wazuh.
-- `$WAZUH_INSTALL_COMMAND` — commande d'installation de l'agent Wazuh.
+- `$CHAINSAW_SOURCE_FOLDER` — Chainsaw source directory.
+- `$ADMIN_DOCUMENT` — administrator Documents directory.
+- `$SOCFORTRESS_DESTINATION_FOLDER` — SOCFortress destination directory.
+- `$SIGMA_RULES_GIT_URL` — Sigma rules Git repository URL.
+- `$TEMP_PATH` — temporary directory.
+- `$IS_ADMIN` — whether the script runs with admin privileges.
+- `$SCRIPT_TO_EXEC` — hash table of scripts to execute.
+- `$WAZUH_INSTALLER_PATH` — Wazuh agent installer path.
+- `$WAZUH_INSTALL_COMMAND` — Wazuh agent install command.
 
 ## Main
 
-La fonction `Main` orchestre le déploiement. Elle vérifie les privilèges admin
-(se relance en élevé si besoin), puis exécute, dans l'ordre :
+The `Main` function orchestrates the deployment. It checks for admin privileges
+(relaunching elevated if needed), then runs, in order:
 
 1. `InstallWazuh`
 2. `InstallScripts`
